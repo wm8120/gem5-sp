@@ -113,9 +113,6 @@ parser = optparse.OptionParser()
 Options.addCommonOptions(parser)
 Options.addSEOptions(parser)
 
-if '--ruby' in sys.argv:
-    Ruby.define_options(parser)
-
 (options, args) = parser.parse_args()
 
 if args:
@@ -220,45 +217,11 @@ for i in xrange(np):
 
     system.cpu[i].createThreads()
 
-if options.ruby:
-    if not (options.cpu_type == "detailed" or options.cpu_type == "timing"):
-        print >> sys.stderr, "Ruby requires TimingSimpleCPU or O3CPU!!"
-        sys.exit(1)
-
-    # Use SimpleMemory with the null option since this memory is only used
-    # for determining which addresses are within the range of the memory.
-    # No space allocation is required.
-    system.physmem = SimpleMemory(range=AddrRange(options.mem_size),
-                              null = True)
-    options.use_map = True
-    Ruby.create_system(options, system)
-    assert(options.num_cpus == len(system.ruby._cpu_ports))
-
-    system.ruby.clk_domain = SrcClockDomain(clock = options.ruby_clock,
-                                        voltage_domain = system.voltage_domain)
-    for i in xrange(np):
-        ruby_port = system.ruby._cpu_ports[i]
-
-        # Create the interrupt controller and connect its ports to Ruby
-        # Note that the interrupt controller is always present but only
-        # in x86 does it have message ports that need to be connected
-        system.cpu[i].createInterruptController()
-
-        # Connect the cpu's cache ports to Ruby
-        system.cpu[i].icache_port = ruby_port.slave
-        system.cpu[i].dcache_port = ruby_port.slave
-        if buildEnv['TARGET_ISA'] == 'x86':
-            system.cpu[i].interrupts.pio = ruby_port.master
-            system.cpu[i].interrupts.int_master = ruby_port.slave
-            system.cpu[i].interrupts.int_slave = ruby_port.master
-            system.cpu[i].itb.walker.port = ruby_port.slave
-            system.cpu[i].dtb.walker.port = ruby_port.slave
-else:
-    MemClass = Simulation.setMemClass(options)
-    system.membus = CoherentXBar()
-    system.system_port = system.membus.slave
-    CacheConfig.config_cache(options, system)
-    MemConfig.config_mem(options, system)
+MemClass = Simulation.setMemClass(options)
+system.membus = CoherentXBar()
+system.system_port = system.membus.slave
+CacheConfig.config_cache(options, system)
+MemConfig.config_mem(options, system)
 
 root = Root(full_system = False, system = system)
 Simulation.run(options, root, system, FutureClass)
