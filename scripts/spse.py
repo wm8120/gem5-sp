@@ -52,10 +52,8 @@ from m5.objects import *
 from m5.util import addToPath, fatal
 
 addToPath('../common')
-addToPath('../ruby')
 
 import Options
-import Ruby
 import Simulation
 import CacheConfig
 import MemConfig
