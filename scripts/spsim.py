@@ -51,6 +51,8 @@ from m5.defines import buildEnv
 from m5.objects import *
 from m5.util import *
 
+from Simulation import *
+
 addToPath('../common')
 
 def scriptCheckpoints(options, maxtick, cptdir):

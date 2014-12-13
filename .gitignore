@@ -26,3 +26,9 @@
 *.exe
 *.out
 *.app
+
+# python rope project
+*.ropeproject
+
+# vim swp file
+*.swp

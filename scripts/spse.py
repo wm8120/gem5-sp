@@ -60,6 +60,8 @@ import MemConfig
 from Caches import *
 from cpu2000 import *
 
+import spsim
+
 def get_processes(options):
     """Interprets provided options and returns a list of processes"""
 
@@ -222,4 +224,4 @@ CacheConfig.config_cache(options, system)
 MemConfig.config_mem(options, system)
 
 root = Root(full_system = False, system = system)
-Simulation.run(options, root, system, FutureClass)
+spsim.run(options, root, system, FutureClass)
