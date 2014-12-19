@@ -61,6 +61,7 @@ from Caches import *
 from cpu2000 import *
 
 import spsim
+import CpuConfig
 
 def get_processes(options):
     """Interprets provided options and returns a list of processes"""
@@ -108,6 +109,11 @@ def get_processes(options):
     else:
         return multiprocesses, 1
 
+
+# add spcpu
+CpuConfig._cpu_aliases_all.append(("spcpu", "LivespCPU"))
+CpuConfig._cpu_classes["LivespCPU"] = LivespCPU
+CpuConfig._cpu_aliases["spcpu"] = LivespCPU
 
 parser = optparse.OptionParser()
 Options.addCommonOptions(parser)
@@ -186,8 +192,9 @@ for cpu in system.cpu:
 
 # Sanity check
 if options.fastmem:
-    if CPUClass != AtomicSimpleCPU:
-        fatal("Fastmem can only be used with atomic CPU!")
+    print CPUClass
+    if CPUClass != AtomicSimpleCPU and CPUClass != LivespCPU:
+        fatal("Fastmem can only be used with atomic or livesp CPU!")
     if (options.caches or options.l2cache):
         fatal("You cannot use fastmem in combination with caches!")
 

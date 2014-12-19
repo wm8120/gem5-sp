@@ -32,14 +32,14 @@ Import('*')
 
 need_simple_base = False
 if 'LivespCPU' in env['CPU_MODELS']:
-    need_simple_base = True
     SimObject('LivespCPU.py')
     Source('spcpu.cc')
 
 if 'AtomicSimpleCPU' not in env['CPU_MODELS'] and \
         'TimingSimpleCPU' not in env['CPU_MODELS']:
+    need_simple_base = True
     DebugFlag('SimpleCPU')
 
 if need_simple_base:
-    Source('base.cc')
+    Source('../simple/base.cc')
     SimObject('BaseSimpleCPU.py')
