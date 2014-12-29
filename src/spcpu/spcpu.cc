@@ -624,6 +624,16 @@ LivespCPU::printAddr(Addr a)
     dcachePort.printAddr(a);
 }
 
+void
+LivespCPU::spInstStop(Counter insts)
+{
+    if (insts != 0) {
+        const char *cause = "a thread reached the max instruction count";
+        for (ThreadID tid = 0; tid < numThreads; ++tid)
+            scheduleInstStop(tid, insts, cause);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////
 //
 //  LivespCPU Simulation Object

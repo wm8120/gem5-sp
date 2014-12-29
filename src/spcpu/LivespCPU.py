@@ -67,3 +67,7 @@ class LivespCPU(BaseSimpleCPU):
         simpoint = SimPoint()
         simpoint.interval = interval
         self.probeListener = simpoint
+
+    @classmethod
+    def export_methods(cls, code):
+        code('''void spInstStop(Counter insts);''')

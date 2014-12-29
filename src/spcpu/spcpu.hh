@@ -215,6 +215,11 @@ class LivespCPU : public BaseSimpleCPU
      * debugging).
      */
     void printAddr(Addr a);
+
+    /**
+     * schedule stop event when simulated instruction reach the interval size
+     */
+    void spInstStop(Counter insts);
 };
 
 #endif // __CPU_SIMPLE_ATOMIC_HH__

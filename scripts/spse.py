@@ -192,7 +192,6 @@ for cpu in system.cpu:
 
 # Sanity check
 if options.fastmem:
-    print CPUClass
     if CPUClass != AtomicSimpleCPU and CPUClass != LivespCPU:
         fatal("Fastmem can only be used with atomic or livesp CPU!")
     if (options.caches or options.l2cache):

@@ -395,9 +395,7 @@ def run(options, root, testsys, cpu_class):
                 # Set all test cpus with the right number of instructions
                 # for the upcoming simulation
                 for i in xrange(np):
-                    testsys.cpu[i].max_insts_any_thread = sp_interval
-
-                m5.instantiate(checkpoint_dir)
+                    testsys.cpu[i]._ccObject.spInstStop(sp_interval)
 
                 exit_event = scriptCheckpoints(options, maxtick, cptdir)
                 exit_cause = exit_event.getCause()
