@@ -68,6 +68,8 @@ class LivespCPU(BaseSimpleCPU):
         simpoint.interval = interval
         self.probeListener = simpoint
 
+    ckpt_insts_any_thread = Param.Counter(0, "take first checkpoint when simulating these instructions")
+
     @classmethod
     def export_methods(cls, code):
         code('''void spInstStop(Counter insts);''')
