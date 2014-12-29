@@ -169,7 +169,7 @@ def run(options, root, testsys, cpu_class):
 
     if options.maxinsts:
         for i in xrange(np):
-            testsys.cpu[i].max_insts_any_thread = options.maxinsts
+            testsys.cpu[i].max_insts_any_thread = options.maxinsts+100000
 
     if cpu_class:
         switch_cpus = [cpu_class(switched_out=True, cpu_id=(i))
@@ -388,9 +388,18 @@ def run(options, root, testsys, cpu_class):
         # received from the benchmark running are ignored and skipped in
         # favor of command line checkpoint instructions.
         exit_event = scriptCheckpoints(options, maxtick, cptdir)
-        if repeat_ckpting:
+        exit_cause = exit_event.getCause()
+        if repeat_ckpting and exit_cause == "a thread reached the max instruction count":
+            options.take_checkpoints += sp_interval
+            # Set all test cpus with the right number of instructions
+            # for the upcoming simulation
+            for i in xrange(np):
+                testsys.cpu[i]._ccObject.spInstStop(sp_interval)
+
+            exit_event = scriptCheckpoints(options, maxtick, cptdir)
             exit_cause = exit_event.getCause()
-            while exit_cause == "a thread reached the max instruction count":
+
+            while exit_cause == "sp simulation reaches the interval size":
                 options.take_checkpoints += sp_interval
                 # Set all test cpus with the right number of instructions
                 # for the upcoming simulation

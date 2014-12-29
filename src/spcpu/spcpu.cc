@@ -628,7 +628,7 @@ void
 LivespCPU::spInstStop(Counter insts)
 {
     if (insts != 0) {
-        const char *cause = "a thread reached the max instruction count";
+        const char *cause = "sp simulation reaches the interval size";
         for (ThreadID tid = 0; tid < numThreads; ++tid)
             scheduleInstStop(tid, insts, cause);
     }
