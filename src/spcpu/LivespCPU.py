@@ -41,6 +41,7 @@
 from m5.params import *
 from BaseSimpleCPU import BaseSimpleCPU
 from SimPoint import SimPoint
+from SPTrace import SPTrace
 
 class LivespCPU(BaseSimpleCPU):
     """Simple CPU model executing a configurable number of

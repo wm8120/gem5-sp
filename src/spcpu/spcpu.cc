@@ -113,7 +113,7 @@ LivespCPU::LivespCPU(LivespCPUParams *p)
       fastmem(p->fastmem)
 {
     _status = Idle;
-
+    
     if (p->ckpt_insts_any_thread != 0) {
         const char *cause = "a thread reached checkpoint inst number";
         for (ThreadID tid = 0; tid < numThreads; ++tid)

@@ -43,77 +43,43 @@
 
 #include "base/hashmap.hh"
 #include "cpu/simple_thread.hh"
-#include "params/SimPoint.hh"
+#include "params/SPTrace.hh"
 #include "sim/probe/probe.hh"
 
 /**
- * Probe for SimPoints BBV generation
+ * Probe for tracing simpoint interval
  */
 
-/**
- *  Start and end address of basic block for SimPoint profiling.
- *  This structure is used to look up the hash table of BBVs.
- *  - first: PC of first inst in basic block
- *  - second: PC of last inst in basic block
- */
-typedef std::pair<Addr, Addr> BasicBlockRange;
-
-/** Overload hash function for BasicBlockRange type */
-__hash_namespace_begin
-template <>
-struct hash<BasicBlockRange>
+class SPTrace : public ProbeListenerObject
 {
   public:
-    size_t operator()(const BasicBlockRange &bb) const {
-        return hash<Addr>()(bb.first + bb.second);
-    }
-};
-__hash_namespace_end
-
-class SimPoint : public ProbeListenerObject
-{
-  public:
-    SimPoint(const SimPointParams *params);
-    virtual ~SimPoint();
+    SPTrace(const SPTraceParams *params);
+    virtual ~SPTrace();
 
     virtual void init();
 
     virtual void regProbeListeners();
 
     /**
-     * Profile basic blocks for SimPoints.
-     * Called at every macro inst to increment basic block inst counts and
-     * to profile block if end of block.
+     * trace simpoint interval
      */
-    void profile(const std::pair<SimpleThread*, StaticInstPtr>&);
+    void trace(const std::pair<SimpleThread*, StaticInstPtr>&);
 
   private:
-    /** SimPoint profiling interval size in instructions */
-    const uint64_t intervalSize;
+    /** skip the first skip_trace_num instructions from simulation start **/
+    const uint64_t skip_trace_num;
 
-    /** Inst count in current basic block */
-    uint64_t intervalCount;
-    /** Excess inst count from previous interval*/
-    uint64_t intervalDrift;
-    /** Pointer to SimPoint BBV output stream */
-    std::ostream *simpointStream;
+    /** how many instruction traced **/
+    uint64_t trace_num;
 
-    /** Basic Block information */
-    struct BBInfo {
-        /** Unique ID */
-        uint64_t id;
-        /** Num of static insts in BB */
-        uint64_t insts;
-        /** Accumulated dynamic inst count executed by BB */
-        uint64_t count;
-    };
+    /** if start tracing **/
+    bool start_tracing;
 
-    /** Hash table containing all previously seen basic blocks */
-    m5::hash_map<BasicBlockRange, BBInfo> bbMap;
-    /** Currently executing basic block */
-    BasicBlockRange currentBBV;
-    /** inst count in current basic block */
-    uint64_t currentBBVInstCount;
+    /** Pointer to trace stream */
+    std::ostream *traceStream;
+
+    /** Pointer to status file stream */
+    std::ostream *statusStream;
 };
 
 #endif // __CPU_SIMPLE_PROBES_SIMPOINT_HH__

@@ -39,107 +39,146 @@
  */
 
 #include "base/output.hh"
-#include "cpu/simple/probes/simpoint.hh"
+#include "cpu/spcpu/probes/sptrace.hh"
+#include "cpu/spcpu/spcpu.hh"
 
-SimPoint::SimPoint(const SimPointParams *p)
+SPTrace::SPTrace(const SPTraceParams *p)
     : ProbeListenerObject(p),
-      intervalSize(p->interval),
-      intervalCount(0),
-      intervalDrift(0),
-      simpointStream(NULL),
-      currentBBV(0, 0),
-      currentBBVInstCount(0)
+      skip_trace_num(p->skip_num),
+      trace_num(0),
+      start_tracing(false),
+      traceStream(NULL),
+      statusStream(NULL)
 {
-    simpointStream = simout.create(p->profile_file, false);
-    if (!simpointStream)
-        fatal("unable to open SimPoint profile_file");
+    traceStream = simout.create(p->trace_file, false);
+    if (!traceStream)
+        fatal("unable to open trace file");
+
+    statusStream = simout.create("spstatus.txt", false);
+    if (!statusStream)
+        fatal("unable to open status file");
 }
 
-SimPoint::~SimPoint()
+SPTrace::~SPTrace()
 {
-    simout.close(simpointStream);
+    simout.close(traceStream);
 }
 
 void
-SimPoint::init()
+SPTrace::init()
 {}
 
 void
-SimPoint::regProbeListeners()
+SPTrace::regProbeListeners()
 {
-    typedef ProbeListenerArg<SimPoint, std::pair<SimpleThread*,StaticInstPtr>>
-        SimPointListener;
-    listeners.push_back(new SimPointListener(this, "Commit",
-                                             &SimPoint::profile));
+    typedef ProbeListenerArg<SPTrace, std::pair<SimpleThread*,StaticInstPtr>>
+        SPTraceListener;
+    listeners.push_back(new SPTraceListener(this, "Commit",
+                                             &SPTrace::trace));
 }
 
 void
-SimPoint::profile(const std::pair<SimpleThread*, StaticInstPtr>& p)
+SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
 {
+    // debug use
+    //*traceStream << "NUM_INTREGS: " << TheISA::NUM_INTREGS << "\n"; 
+
+
     SimpleThread* thread = p.first;
     const StaticInstPtr &inst = p.second;
+    int destRegNum = 0;
+    Addr mem_addr;
 
-    if (!currentBBVInstCount)
-        currentBBV.first = thread->pcState().instAddr();
+    Addr pc = thread->pcState().instAddr();
+    LivespCPU* spcpu = (LivespCPU *)thread->getCpuPtr();
+    Trace::InstRecord *traceData = spcpu->getTraceData();
 
-    ++intervalCount;
-    ++currentBBVInstCount;
+    if (trace_num < skip_trace_num)
+        goto out;
 
-    // If inst is control inst, assume end of basic block.
-    if (inst->isControl()) {
-        currentBBV.second = thread->pcState().instAddr();
+    if ( !start_tracing )
+    {
+        if (!inst->isControl()) 
+            goto out;
 
-        auto map_itr = bbMap.find(currentBBV);
-        if (map_itr == bbMap.end()){
-            // If a new (previously unseen) basic block is found,
-            // add a new unique id, record num of insts and insert into bbMap.
-            BBInfo info;
-            info.id = bbMap.size() + 1;
-            info.insts = currentBBVInstCount;
-            info.count = currentBBVInstCount;
-            bbMap.insert(std::make_pair(currentBBV, info));
-        } else {
-            // If basic block is seen before, just increment the count by the
-            // number of insts in basic block.
-            BBInfo& info = map_itr->second;
-            info.count += currentBBVInstCount;
+        //dump registers 
+        *statusStream << "#registers" << "\n";
+        for(int i=0; i < TheISA::NUM_ARCH_INTREGS; i++)
+        {
+            *statusStream << "x" << std::dec << i << "=" << \
+                    "0x" << std::hex << thread->readIntReg(i) << "\n";
         }
-        currentBBVInstCount = 0;
+        *statusStream << "\n";
 
-        // Reached end of interval if the sum of the current inst count
-        // (intervalCount) and the excessive inst count from the previous
-        // interval (intervalDrift) is greater than/equal to the interval size.
-        if (intervalCount + intervalDrift >= intervalSize) {
-            // summarize interval and display BBV info
-            std::vector<std::pair<uint64_t, uint64_t> > counts;
-            for (auto map_itr = bbMap.begin(); map_itr != bbMap.end();
-                    ++map_itr) {
-                BBInfo& info = map_itr->second;
-                if (info.count != 0) {
-                    counts.push_back(std::make_pair(info.id, info.count));
-                    info.count = 0;
-                }
-            }
-            std::sort(counts.begin(), counts.end());
+        //dump stack info
+        *statusStream << "#stack\n";
+        *statusStream << "stack_base=0x8000000000\n";
+        *statusStream << "stack_limit=0x4000\n";
 
-            // Print output BBV info
-            *simpointStream << "T";
-            for (auto cnt_itr = counts.begin(); cnt_itr != counts.end();
-                    ++cnt_itr) {
-                *simpointStream << ":" << cnt_itr->first
-                                << ":" << cnt_itr->second << " ";
-            }
-            *simpointStream << "\n";
+        start_tracing = true;
 
-            intervalDrift = (intervalCount + intervalDrift) - intervalSize;
-            intervalCount = 0;
+        goto out;
+    }
+
+    // pc
+    *traceStream << "0x" << std::hex << pc << ":";
+
+    //disassembly
+    *traceStream << inst->disassemble(pc);
+    *traceStream << ":";
+
+    //RegChange
+    destRegNum = inst->numDestRegs();
+    for (int i=0; i < destRegNum; i++)
+    {
+        //*traceStream << thread->readIntReg(inst->destRegIdx(i)) << " ";
+        *traceStream << inst->destRegIdx(i) << " ";
+    }
+    *traceStream << ":";
+
+    //MemChange and Stride
+    if (inst->opClass() == Enums::MemWrite && traceData->getAddrValid()) 
+    {
+        int stride = traceData->getDataStatus();
+        if (stride != 0)
+        {
+            *traceStream << "MemWrite:vaddr ";
+            mem_addr = traceData->getAddr();
+            *traceStream << "0x" << mem_addr << ",data " ;
+            if (stride != 3) //is double?
+                *traceStream << "0x" << std::hex << traceData->getIntData();
+            else
+                *traceStream << "0x" << std::hex << traceData->getFloatData();
+            *traceStream << ":Stride:" << std::dec << stride;
         }
     }
+
+    if (inst->opClass() == Enums::MemRead && traceData->getAddrValid()) 
+    {
+        int stride = traceData->getDataStatus();
+        if (stride != 0)
+        {
+            *traceStream << "MemRead:vaddr ";
+            mem_addr = traceData->getAddr();
+            *traceStream << "0x" << mem_addr << ",data " ;
+            if (stride != 3) //is double?
+                *traceStream << "0x" << std::hex << traceData->getIntData();
+            else
+                *traceStream << "0x" << std::hex << traceData->getFloatData();
+            *traceStream << ":Stride:" << std::dec << stride;
+        }
+    }
+
+    *traceStream << "\n";
+
+out:
+    //inc trace_num;
+    trace_num++;
 }
 
-/** SimPoint SimObject */
-SimPoint*
-SimPointParams::create()
+/** SPTrace SimObject */
+SPTrace*
+SPTraceParams::create()
 {
-    return new SimPoint(this);
+    return new SPTrace(this);
 }

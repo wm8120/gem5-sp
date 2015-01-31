@@ -47,6 +47,7 @@
 #include "params/LivespCPU.hh"
 #include "sim/probe/probe.hh"
 
+
 class LivespCPU : public BaseSimpleCPU
 {
   public:
@@ -220,6 +221,11 @@ class LivespCPU : public BaseSimpleCPU
      * schedule stop event when simulated instruction reach the interval size
      */
     void spInstStop(Counter insts);
+
+    /**
+     * Get Trace::InstRecord instance in BaseSimpleCPU
+     */
+    Trace::InstRecord* getTraceData() { return traceData; };
 };
 
 #endif // __CPU_SIMPLE_ATOMIC_HH__
