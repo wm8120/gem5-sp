@@ -80,6 +80,8 @@ class SPTrace : public ProbeListenerObject
 
     /** Pointer to status file stream */
     std::ostream *statusStream;
+
+    void mem_trace(Trace::InstRecord* traceData, const char* rw_str);
 };
 
 #endif // __CPU_SIMPLE_PROBES_SIMPOINT_HH__
