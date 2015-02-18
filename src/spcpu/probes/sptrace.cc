@@ -142,12 +142,20 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
     //MemChange and Stride
     if (inst->opClass() == Enums::MemWrite && traceData->getAddrValid()) 
     {
-        mem_trace(traceData, WRITE);
+        MemRecord* memTraceData = spcpu->getMemTrace();
+        if (memTraceData == NULL) {
+            panic("MemRecord isn't initialized");
+        }
+        mem_trace(traceData, memTraceData, WRITE);
     }
 
     if (inst->opClass() == Enums::MemRead && traceData->getAddrValid()) 
     {
-        mem_trace(traceData, READ);
+        MemRecord* memTraceData = spcpu->getMemTrace();
+        if (memTraceData == NULL) {
+            panic("MemRecord isn't initialized");
+        }
+        mem_trace(traceData, memTraceData, READ);
     }
 
     *traceStream << "\n";
@@ -157,9 +165,9 @@ out:
     trace_num++;
 }
 
-void SPTrace::mem_trace(Trace::InstRecord* traceData, enum RDWR rw)
+void SPTrace::mem_trace(Trace::InstRecord* traceData, MemRecord* memTraceData, enum RDWR rw)
 {
-    int stride = traceData->getDataStatus();
+    int stride = memTraceData->getStride();
     
     if (rw == READ)
         *traceStream << "MemRead";
@@ -170,29 +178,31 @@ void SPTrace::mem_trace(Trace::InstRecord* traceData, enum RDWR rw)
     Addr mem_addr = traceData->getAddr();
     *traceStream << "0x" << mem_addr << ",data " ;
 
-    switch (stride)
-    {
-        case 0:
-            break;
-        case 3:
-            *traceStream << "0x" << std::hex << traceData->getFloatData();
-            break;
-        case 5:
-            {
-                Trace::TwinU32 tu32 = traceData->getTwinU32Data();
-                *traceStream << "0x" << std::hex << tu32.a << ",0x" << std::hex << tu32.b;
-                break;
-            }
-        case 9:
-            {
-                Trace::TwinU64 tu64 = traceData->getTwinU64Data();
-                *traceStream << "0x" << std::hex << tu64.a << ",0x" << std::hex << tu64.b;
-                stride = 8;
-                break;
-            }
-        default:
-            *traceStream << "0x" << std::hex << traceData->getIntData();
-    }
+    *traceStream << memTraceData->strData();
+
+    //switch (stride)
+    //{
+    //    case 0:
+    //        break;
+    //    case 3:
+    //        *traceStream << "0x" << std::hex << traceData->getFloatData();
+    //        break;
+    //    case 5:
+    //        {
+    //            //Trace::TwinU32 tu32 = traceData->getTwinU32Data();
+    //            //*traceStream << "0x" << std::hex << tu32.a << ",0x" << std::hex << tu32.b;
+    //            break;
+    //        }
+    //    case 9:
+    //        {
+    //            //Trace::TwinU64 tu64 = traceData->getTwinU64Data();
+    //            //*traceStream << "0x" << std::hex << tu64.a << ",0x" << std::hex << tu64.b;
+    //            stride = 8;
+    //            break;
+    //        }
+    //    default:
+    //        *traceStream << "0x" << std::hex << traceData->getIntData();
+    //}
     *traceStream << ":Stride:" << std::dec << stride;
 }
 

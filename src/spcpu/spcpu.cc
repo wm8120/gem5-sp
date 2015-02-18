@@ -110,7 +110,8 @@ LivespCPU::LivespCPU(LivespCPUParams *p)
       drain_manager(NULL),
       icachePort(name() + ".icache_port", this),
       dcachePort(name() + ".dcache_port", this),
-      fastmem(p->fastmem)
+      fastmem(p->fastmem),
+      memTraceData(NULL)
 {
     _status = Idle;
 
@@ -369,6 +370,11 @@ LivespCPU::readMem(Addr addr, uint8_t * data,
                 assert(!locked);
                 locked = true;
             }
+            // record read memory
+            if (fault == NoFault && data) {
+                memTraceData = new MemRecord(data, size);
+            }
+
             return fault;
         }
 
@@ -405,6 +411,11 @@ LivespCPU::writeMem(uint8_t *data, unsigned size,
 
     if (traceData) {
         traceData->setAddr(addr);
+    }
+
+    // record mem change
+    if (data) {
+        memTraceData = new MemRecord(data, size);
     }
 
     //The size of the data we're trying to read.
@@ -505,9 +516,6 @@ LivespCPU::tick()
 
     Tick latency = 0;
 
-    // allocate record for memory access
-    memTraceData = new MemRecord;
-    
     for (int i = 0; i < width || locked; ++i) {
         numCycles++;
 
@@ -567,8 +575,8 @@ LivespCPU::tick()
 
             if (curStaticInst) {
                 //protect memory access trace
-                if (curStaticInst->opClass() == Enums::MemWrite || curStaticInst->opClass() == Enums::MemRead)
-                    traceData->invalidDataOverride();
+                //if (curStaticInst->opClass() == Enums::MemWrite || curStaticInst->opClass() == Enums::MemRead)
+                //    traceData->invalidDataOverride();
 
                 fault = curStaticInst->execute(this, traceData);
 

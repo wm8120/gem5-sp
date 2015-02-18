@@ -45,6 +45,7 @@
 #include "cpu/simple_thread.hh"
 #include "params/SPTrace.hh"
 #include "sim/probe/probe.hh"
+#include "cpu/spcpu/spcpu.hh"
 
 /**
  * Probe for tracing simpoint interval
@@ -70,7 +71,7 @@ class SPTrace : public ProbeListenerObject
     /**
      * print memory access trace
      */
-    void mem_trace(Trace::InstRecord*, enum RDWR rw);
+    void mem_trace(Trace::InstRecord*, MemRecord*, enum RDWR rw);
 
   private:
     /** skip the first skip_trace_num instructions from simulation start **/
