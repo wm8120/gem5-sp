@@ -50,6 +50,8 @@
  * Probe for tracing simpoint interval
  */
 
+enum RDWR {READ=0, WRITE=1};
+
 class SPTrace : public ProbeListenerObject
 {
   public:
@@ -64,6 +66,11 @@ class SPTrace : public ProbeListenerObject
      * trace simpoint interval
      */
     void trace(const std::pair<SimpleThread*, StaticInstPtr>&);
+
+    /**
+     * print memory access trace
+     */
+    void mem_trace(Trace::InstRecord*, enum RDWR rw);
 
   private:
     /** skip the first skip_trace_num instructions from simulation start **/
@@ -80,8 +87,6 @@ class SPTrace : public ProbeListenerObject
 
     /** Pointer to status file stream */
     std::ostream *statusStream;
-
-    void mem_trace(Trace::InstRecord* traceData, const char* rw_str);
 };
 
 #endif // __CPU_SIMPLE_PROBES_SIMPOINT_HH__

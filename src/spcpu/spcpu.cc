@@ -113,7 +113,7 @@ LivespCPU::LivespCPU(LivespCPUParams *p)
       fastmem(p->fastmem)
 {
     _status = Idle;
-    
+
     if (p->ckpt_insts_any_thread != 0) {
         const char *cause = "a thread reached checkpoint inst number";
         for (ThreadID tid = 0; tid < numThreads; ++tid)
@@ -505,6 +505,9 @@ LivespCPU::tick()
 
     Tick latency = 0;
 
+    // allocate record for memory access
+    memTraceData = new MemRecord;
+    
     for (int i = 0; i < width || locked; ++i) {
         numCycles++;
 
@@ -563,6 +566,10 @@ LivespCPU::tick()
             preExecute();
 
             if (curStaticInst) {
+                //protect memory access trace
+                if (curStaticInst->opClass() == Enums::MemWrite || curStaticInst->opClass() == Enums::MemRead)
+                    traceData->invalidDataOverride();
+
                 fault = curStaticInst->execute(this, traceData);
 
                 // keep an instruction count
@@ -612,6 +619,10 @@ LivespCPU::tick()
 
     if (_status != Idle)
         schedule(tickEvent, curTick() + latency);
+
+    //recycle
+    if (memTraceData)
+        delete memTraceData;
 }
 
 void

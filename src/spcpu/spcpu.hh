@@ -47,6 +47,43 @@
 #include "params/LivespCPU.hh"
 #include "sim/probe/probe.hh"
 
+class MemRecord
+{
+    union {
+        uint64_t as_int;
+        double as_double;
+    } data;
+    enum {
+        DataInvalid = 0,
+        DataInt8 = 1,   // set to equal number of bytes
+        DataInt16 = 2,
+        DataInt32 = 4,
+        DataInt64 = 8,
+        DataDouble = 3
+    } data_status;
+
+public:
+    MemRecord() {};
+    ~MemRecord() {};
+
+    void setData(Twin64_t d) { data.as_int = d.a; data_status = DataInt64; }
+    void setData(Twin32_t d) { data.as_int = d.a; data_status = DataInt32; }
+    void setData(uint64_t d) { data.as_int = d; data_status = DataInt64; }
+    void setData(uint32_t d) { data.as_int = d; data_status = DataInt32; }
+    void setData(uint16_t d) { data.as_int = d; data_status = DataInt16; }
+    void setData(uint8_t d) { data.as_int = d; data_status = DataInt8; }
+
+    void setData(int64_t d) { setData((uint64_t)d); }
+    void setData(int32_t d) { setData((uint32_t)d); }
+    void setData(int16_t d) { setData((uint16_t)d); }
+    void setData(int8_t d)  { setData((uint8_t)d); }
+
+    void setData(double d) { data.as_double = d; data_status = DataDouble; }
+
+    uint64_t getIntData() { return data.as_int; }
+    double getFloatData() { return data.as_double; }
+    int getDataStatus() { return data_status; }
+};
 
 class LivespCPU : public BaseSimpleCPU
 {
@@ -226,6 +263,16 @@ class LivespCPU : public BaseSimpleCPU
      * Get Trace::InstRecord instance in BaseSimpleCPU
      */
     Trace::InstRecord* getTraceData() { return traceData; };
+
+    /**
+     * get memory trace data
+     * This structure is for recording memory access trace, the gem5 provided cannot 
+     * record memory access times (one or pair) and stride correctly.
+     */
+    MemRecord* getMemTrace() { return memTraceData; };
+
+  private:
+    MemRecord* memTraceData;
 };
 
 #endif // __CPU_SIMPLE_ATOMIC_HH__

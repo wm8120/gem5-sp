@@ -42,7 +42,6 @@
 #include "cpu/spcpu/probes/sptrace.hh"
 #include "cpu/spcpu/spcpu.hh"
 
-#define ITERATE(type, var) for (type::iterator it = (var).begin(); it != (var).end(); it++)
 SPTrace::SPTrace(const SPTraceParams *p)
     : ProbeListenerObject(p),
       skip_trace_num(p->skip_num),
@@ -83,7 +82,7 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
 {
     // debug use
     //*traceStream << "NUM_INTREGS: " << TheISA::NUM_INTREGS << "\n"; 
-    
+
 
     SimpleThread* thread = p.first;
     const StaticInstPtr &inst = p.second;
@@ -124,7 +123,8 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
     *traceStream << "0x" << std::hex << pc;
     if (inst->isMicroop())
         *traceStream << "." << thread->pcState().microPC();
-    *traceStream<< ":";
+    *traceStream << ":";
+    
 
     //disassembly
     *traceStream << inst->disassemble(pc);
@@ -142,28 +142,31 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
     //MemChange and Stride
     if (inst->opClass() == Enums::MemWrite && traceData->getAddrValid()) 
     {
-        mem_trace(traceData, "MemWrite");
+        mem_trace(traceData, WRITE);
     }
 
     if (inst->opClass() == Enums::MemRead && traceData->getAddrValid()) 
     {
-        mem_trace(traceData, "MemRead");
+        mem_trace(traceData, READ);
     }
 
     *traceStream << "\n";
 
 out:
     //inc trace_num;
-    if (!inst->isMicroop() || inst->isLastMicroop())
-        trace_num++;
+    trace_num++;
 }
 
-void SPTrace::mem_trace(Trace::InstRecord* traceData, const char* rw_str)
+void SPTrace::mem_trace(Trace::InstRecord* traceData, enum RDWR rw)
 {
     int stride = traceData->getDataStatus();
-    Trace::MultiData *mdata = traceData->getMultiData();
+    
+    if (rw == READ)
+        *traceStream << "MemRead";
+    else 
+        *traceStream << "MemWrite";
 
-    *traceStream << rw_str << ":vaddr ";
+    *traceStream << ":vaddr ";
     Addr mem_addr = traceData->getAddr();
     *traceStream << "0x" << mem_addr << ",data " ;
 
@@ -171,47 +174,24 @@ void SPTrace::mem_trace(Trace::InstRecord* traceData, const char* rw_str)
     {
         case 0:
             break;
-        case 1:
-            ITERATE(Trace::MultiData, *mdata) {
-                *traceStream << "0x" << std::hex << (*it).as_u8 << " ";
-            }
+        case 3:
+            *traceStream << "0x" << std::hex << traceData->getFloatData();
             break;
-        case 2:
-            ITERATE(Trace::MultiData, *mdata) {
-                *traceStream << "0x" << std::hex << (*it).as_u16 << " ";
-            }
-            break;
-        case 3: //double
-            ITERATE(Trace::MultiData, *mdata) {
-                *traceStream << "0x" << std::hex << traceData->getFloatData();
-            }
-            break;
-        case 4:
-            ITERATE(Trace::MultiData, *mdata) {
-                *traceStream << "0x" << std::hex << (*it).as_u32 << " ";
-            }
-            break;
-        case 5: //Twin32_t
-            for(Trace::MultiData::iterator it = mdata->begin(); it != mdata->end(); it++)
+        case 5:
             {
-                *traceStream << "0x" << std::hex << (*it).as_twin32.a << " ";
-                *traceStream << "0x" << std::hex << (*it).as_twin32.b;
+                Trace::TwinU32 tu32 = traceData->getTwinU32Data();
+                *traceStream << "0x" << std::hex << tu32.a << ",0x" << std::hex << tu32.b;
+                break;
             }
-            break;
-        case 8: 
-            ITERATE(Trace::MultiData, *mdata) {
-                *traceStream << "0x" << std::hex << (*it).as_u64 << " ";
-            }
-            break;
         case 9:
-            for(Trace::MultiData::iterator it = mdata->begin(); it != mdata->end(); it++)
             {
-                *traceStream << "0x" << std::hex << (*it).as_twin64.a << " ";
-                *traceStream << "0x" << std::hex << (*it).as_twin64.b;
+                Trace::TwinU64 tu64 = traceData->getTwinU64Data();
+                *traceStream << "0x" << std::hex << tu64.a << ",0x" << std::hex << tu64.b;
+                stride = 8;
+                break;
             }
-            break;
         default:
-            panic("Unrecognized memory access size");
+            *traceStream << "0x" << std::hex << traceData->getIntData();
     }
     *traceStream << ":Stride:" << std::dec << stride;
 }
