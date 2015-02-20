@@ -314,6 +314,8 @@ LivespCPU::readMem(Addr addr, uint8_t * data,
 
     //The size of the data we're trying to read.
     int fullSize = size;
+    // The original data address
+    uint8_t* origin_data = data;
 
     //The address of the second part of this access if it needs to be split
     //across a cache line boundary.
@@ -372,7 +374,9 @@ LivespCPU::readMem(Addr addr, uint8_t * data,
             }
             // record read memory
             if (fault == NoFault && data) {
-                memTraceData = new MemRecord(data, size);
+                if (memTraceData != NULL)
+                    panic("Memory access pattern is unhandled, cannot record memory trace");
+                memTraceData = new MemRecord(origin_data, fullSize);
             }
 
             return fault;
@@ -415,6 +419,8 @@ LivespCPU::writeMem(uint8_t *data, unsigned size,
 
     // record mem change
     if (data) {
+        if (memTraceData != NULL)
+            panic("Memory access pattern is unhandled, cannot record memory trace");
         memTraceData = new MemRecord(data, size);
     }
 
@@ -591,6 +597,12 @@ LivespCPU::tick()
                 }
 
                 postExecute();
+
+                //recycle
+                if (memTraceData) {
+                    delete memTraceData;
+                    memTraceData = NULL;
+                }
             }
 
             // @todo remove me after debugging with legion done
@@ -627,10 +639,6 @@ LivespCPU::tick()
 
     if (_status != Idle)
         schedule(tickEvent, curTick() + latency);
-
-    //recycle
-    if (memTraceData)
-        delete memTraceData;
 }
 
 void

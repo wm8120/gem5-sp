@@ -83,7 +83,6 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
     // debug use
     //*traceStream << "NUM_INTREGS: " << TheISA::NUM_INTREGS << "\n"; 
 
-
     SimpleThread* thread = p.first;
     const StaticInstPtr &inst = p.second;
     int destRegNum = 0;
@@ -178,7 +177,7 @@ void SPTrace::mem_trace(Trace::InstRecord* traceData, MemRecord* memTraceData, e
     Addr mem_addr = traceData->getAddr();
     *traceStream << "0x" << mem_addr << ",data " ;
 
-    *traceStream << memTraceData->strData();
+    *traceStream << memTraceData->strData().c_str();
 
     //switch (stride)
     //{

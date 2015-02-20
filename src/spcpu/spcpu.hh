@@ -47,6 +47,9 @@
 #include "params/LivespCPU.hh"
 #include "sim/probe/probe.hh"
 
+#include <bitset>
+#include <iomanip>
+
 class MemRecord
 {
     unsigned stride;
@@ -61,6 +64,7 @@ public:
     ~MemRecord(){
         if (bytes != NULL) {
             delete bytes;
+            bytes = NULL;
         }
     };
 
@@ -72,8 +76,8 @@ public:
         std::stringstream ss("");
         if (bytes != NULL ) {
             ss << "0x";
-            for (unsigned i=0; i < stride; i++){
-                ss << std::hex << bytes[i];
+            for (int i=stride-1; i >= 0; i--){
+                ss << std::setfill('0') << std::setw(2) << std::hex << unsigned(bytes[i]);
             }
             return ss.str();
         }
