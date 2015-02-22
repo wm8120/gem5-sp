@@ -42,7 +42,7 @@
 #define __CPU_SIMPLE_PROBES_SIMPOINT_HH__
 
 #include "base/hashmap.hh"
-#include "cpu/simple_thread.hh"
+#include "cpu/spcpu/sp_simple_thread.hh"
 #include "params/SPTrace.hh"
 #include "sim/probe/probe.hh"
 #include "cpu/spcpu/spcpu.hh"

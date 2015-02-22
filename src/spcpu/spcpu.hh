@@ -40,10 +40,10 @@
  * Authors: Steve Reinhardt
  */
 
-#ifndef __CPU_SIMPLE_ATOMIC_HH__
-#define __CPU_SIMPLE_ATOMIC_HH__
+#ifndef __CPU_SP_SIMPLE_ATOMIC_HH__
+#define __CPU_SP_SIMPLE_ATOMIC_HH__
 
-#include "cpu/simple/base.hh"
+#include "cpu/spcpu/spbase.hh"
 #include "params/LivespCPU.hh"
 #include "sim/probe/probe.hh"
 
@@ -85,7 +85,7 @@ public:
     };
 };
 
-class LivespCPU : public BaseSimpleCPU
+class LivespCPU : public SPBaseSimpleCPU
 {
   public:
 
@@ -164,7 +164,7 @@ class LivespCPU : public BaseSimpleCPU
 
       public:
 
-        AtomicCPUPort(const std::string &_name, BaseSimpleCPU* _cpu)
+        AtomicCPUPort(const std::string &_name, SPBaseSimpleCPU* _cpu)
             : MasterPort(_name, _cpu)
         { }
 
@@ -189,7 +189,7 @@ class LivespCPU : public BaseSimpleCPU
 
       public:
 
-        AtomicCPUDPort(const std::string &_name, BaseSimpleCPU* _cpu)
+        AtomicCPUDPort(const std::string &_name, SPBaseSimpleCPU* _cpu)
             : AtomicCPUPort(_name, _cpu), cpu(_cpu)
         {
             cacheBlockMask = ~(cpu->cacheLineSize() - 1);
@@ -199,7 +199,7 @@ class LivespCPU : public BaseSimpleCPU
 
         Addr cacheBlockMask;
       protected:
-        BaseSimpleCPU *cpu;
+        SPBaseSimpleCPU *cpu;
 
         virtual Tick recvAtomicSnoop(PacketPtr pkt);
         virtual void recvFunctionalSnoop(PacketPtr pkt);
@@ -260,7 +260,7 @@ class LivespCPU : public BaseSimpleCPU
     void spInstStop(Counter insts);
 
     /**
-     * Get Trace::InstRecord instance in BaseSimpleCPU
+     * Get Trace::InstRecord instance in SPBaseSimpleCPU
      */
     Trace::InstRecord* getTraceData() { return traceData; };
 
@@ -275,4 +275,4 @@ class LivespCPU : public BaseSimpleCPU
     MemRecord* memTraceData;
 };
 
-#endif // __CPU_SIMPLE_ATOMIC_HH__
+#endif // __CPU_SP_SIMPLE_ATOMIC_HH__

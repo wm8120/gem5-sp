@@ -50,7 +50,7 @@
 #include "cpu/exetrace.hh"
 #include "debug/Drain.hh"
 #include "debug/ExecFaulting.hh"
-#include "debug/SimpleCPU.hh"
+#include "debug/SPSimpleCPU.hh"
 #include "mem/packet.hh"
 #include "mem/packet_access.hh"
 #include "mem/physical.hh"
@@ -87,6 +87,11 @@ LivespCPU::init()
 
     // Initialise the ThreadContext's memory proxies
     tcBase()->initMemProxies(tcBase());
+    // set new SETranslatingPortProxy proxy, which can trace syscall
+    SETranslatingPortProxy* sp_proxy = new SETranslatingPortProxy(getDataPort(),
+            thread->getProcessPtr(),
+            SETranslatingPortProxy::NextPage);
+    thread->setMemProxy(*sp_proxy);
 
     if (FullSystem && !params()->switched_out) {
         ThreadID size = threadContexts.size();
@@ -104,7 +109,7 @@ LivespCPU::init()
 }
 
 LivespCPU::LivespCPU(LivespCPUParams *p)
-    : BaseSimpleCPU(p), tickEvent(this), width(p->width), locked(false),
+    : SPBaseSimpleCPU(p), tickEvent(this), width(p->width), locked(false),
       simulate_data_stalls(p->simulate_data_stalls),
       simulate_inst_stalls(p->simulate_inst_stalls),
       drain_manager(NULL),
@@ -158,7 +163,7 @@ LivespCPU::drainResume()
     if (switchedOut())
         return;
 
-    DPRINTF(SimpleCPU, "Resume\n");
+    DPRINTF(SPSimpleCPU, "Resume\n");
     verifyMemoryMode();
 
     assert(!threadContexts.empty());
@@ -167,10 +172,10 @@ LivespCPU::drainResume()
 
     if (thread->status() == ThreadContext::Active) {
         schedule(tickEvent, nextCycle());
-        _status = BaseSimpleCPU::Running;
+        _status = SPBaseSimpleCPU::Running;
         notIdleFraction = 1;
     } else {
-        _status = BaseSimpleCPU::Idle;
+        _status = SPBaseSimpleCPU::Idle;
         notIdleFraction = 0;
     }
 
@@ -198,10 +203,10 @@ LivespCPU::tryCompleteDrain()
 void
 LivespCPU::switchOut()
 {
-    BaseSimpleCPU::switchOut();
+    SPBaseSimpleCPU::switchOut();
 
     assert(!tickEvent.scheduled());
-    assert(_status == BaseSimpleCPU::Running || _status == Idle);
+    assert(_status == SPBaseSimpleCPU::Running || _status == Idle);
     assert(isDrained());
 }
 
@@ -209,7 +214,7 @@ LivespCPU::switchOut()
 void
 LivespCPU::takeOverFrom(BaseCPU *oldCPU)
 {
-    BaseSimpleCPU::takeOverFrom(oldCPU);
+    SPBaseSimpleCPU::takeOverFrom(oldCPU);
 
     // The tick event should have been descheduled by drain()
     assert(!tickEvent.scheduled());
@@ -231,7 +236,7 @@ LivespCPU::verifyMemoryMode() const
 void
 LivespCPU::activateContext(ThreadID thread_num)
 {
-    DPRINTF(SimpleCPU, "ActivateContext %d\n", thread_num);
+    DPRINTF(SPSimpleCPU, "ActivateContext %d\n", thread_num);
 
     assert(thread_num == 0);
     assert(thread);
@@ -244,14 +249,14 @@ LivespCPU::activateContext(ThreadID thread_num)
 
     //Make sure ticks are still on multiples of cycles
     schedule(tickEvent, clockEdge(Cycles(0)));
-    _status = BaseSimpleCPU::Running;
+    _status = SPBaseSimpleCPU::Running;
 }
 
 
 void
 LivespCPU::suspendContext(ThreadID thread_num)
 {
-    DPRINTF(SimpleCPU, "SuspendContext %d\n", thread_num);
+    DPRINTF(SPSimpleCPU, "SuspendContext %d\n", thread_num);
 
     assert(thread_num == 0);
     assert(thread);
@@ -259,7 +264,7 @@ LivespCPU::suspendContext(ThreadID thread_num)
     if (_status == Idle)
         return;
 
-    assert(_status == BaseSimpleCPU::Running);
+    assert(_status == SPBaseSimpleCPU::Running);
 
     // tick event may not be scheduled if this gets called from inside
     // an instruction's execution, e.g. "quiesce"
@@ -274,12 +279,12 @@ LivespCPU::suspendContext(ThreadID thread_num)
 Tick
 LivespCPU::AtomicCPUDPort::recvAtomicSnoop(PacketPtr pkt)
 {
-    DPRINTF(SimpleCPU, "received snoop pkt for addr:%#x %s\n", pkt->getAddr(),
+    DPRINTF(SPSimpleCPU, "received snoop pkt for addr:%#x %s\n", pkt->getAddr(),
             pkt->cmdString());
 
     // if snoop invalidates, release any associated locks
     if (pkt->isInvalidate()) {
-        DPRINTF(SimpleCPU, "received invalidation for addr:%#x\n",
+        DPRINTF(SPSimpleCPU, "received invalidation for addr:%#x\n",
                 pkt->getAddr());
         TheISA::handleLockedSnoop(cpu->thread, pkt, cacheBlockMask);
     }
@@ -290,12 +295,12 @@ LivespCPU::AtomicCPUDPort::recvAtomicSnoop(PacketPtr pkt)
 void
 LivespCPU::AtomicCPUDPort::recvFunctionalSnoop(PacketPtr pkt)
 {
-    DPRINTF(SimpleCPU, "received snoop pkt for addr:%#x %s\n", pkt->getAddr(),
+    DPRINTF(SPSimpleCPU, "received snoop pkt for addr:%#x %s\n", pkt->getAddr(),
             pkt->cmdString());
 
     // if snoop invalidates, release any associated locks
     if (pkt->isInvalidate()) {
-        DPRINTF(SimpleCPU, "received invalidation for addr:%#x\n",
+        DPRINTF(SPSimpleCPU, "received invalidation for addr:%#x\n",
                 pkt->getAddr());
         TheISA::handleLockedSnoop(cpu->thread, pkt, cacheBlockMask);
     }
@@ -518,7 +523,7 @@ LivespCPU::writeMem(uint8_t *data, unsigned size,
 void
 LivespCPU::tick()
 {
-    DPRINTF(SimpleCPU, "Tick\n");
+    DPRINTF(SPSimpleCPU, "Tick\n");
 
     Tick latency = 0;
 

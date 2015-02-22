@@ -32,10 +32,10 @@ from BaseCPU import BaseCPU
 from DummyChecker import DummyChecker
 from BranchPredictor import BranchPredictor
 
-class BaseSimpleCPU(BaseCPU):
-    type = 'BaseSimpleCPU'
+class SPBaseSimpleCPU(BaseCPU):
+    type = 'SPBaseSimpleCPU'
     abstract = True
-    cxx_header = "cpu/simple/base.hh"
+    cxx_header = "cpu/spcpu/spbase.hh"
 
     def addCheckerCpu(self):
         if buildEnv['TARGET_ISA'] in ['arm']:

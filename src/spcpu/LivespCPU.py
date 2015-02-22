@@ -39,11 +39,11 @@
 # Authors: Nathan Binkert
 
 from m5.params import *
-from BaseSimpleCPU import BaseSimpleCPU
+from SPBaseSimpleCPU import SPBaseSimpleCPU
 from SimPoint import SimPoint
 from SPTrace import SPTrace
 
-class LivespCPU(BaseSimpleCPU):
+class LivespCPU(SPBaseSimpleCPU):
     """Simple CPU model executing a configurable number of
     instructions per cycle. This model uses the simplified 'atomic'
     memory mode."""
