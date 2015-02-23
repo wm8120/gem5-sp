@@ -35,6 +35,7 @@ if 'LivespCPU' in env['CPU_MODELS']:
     need_sp_simple_base = True
     SimObject('LivespCPU.py')
     Source('spcpu.cc')
+    Source('spse_translating_port_proxy.cc')
     DebugFlag('SPSimpleCPU')
 
 if need_sp_simple_base:

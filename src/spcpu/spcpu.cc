@@ -59,6 +59,8 @@
 #include "sim/system.hh"
 #include "sim/full_system.hh"
 
+#include "spse_translating_port_proxy.hh"
+
 using namespace std;
 using namespace TheISA;
 
@@ -87,11 +89,18 @@ LivespCPU::init()
 
     // Initialise the ThreadContext's memory proxies
     tcBase()->initMemProxies(tcBase());
+
     // set new SETranslatingPortProxy proxy, which can trace syscall
-    SETranslatingPortProxy* sp_proxy = new SETranslatingPortProxy(getDataPort(),
+    SPSETranslatingPortProxy* sp_proxy = new SPSETranslatingPortProxy(getDataPort(),
             thread->getProcessPtr(),
             SETranslatingPortProxy::NextPage);
-    thread->setMemProxy(*sp_proxy);
+    //register probe point  
+    ProbePointArg<std::pair<const uint8_t*, int >>* pp = \
+        new ProbePointArg<std::pair<const uint8_t*, int >>(getProbeManager(), "SysEmu");
+    sp_proxy->setProbePointArg(pp);
+
+    SETranslatingPortProxy* spse_proxy = sp_proxy;
+    thread->setMemProxy(*spse_proxy);
 
     if (FullSystem && !params()->switched_out) {
         ThreadID size = threadContexts.size();

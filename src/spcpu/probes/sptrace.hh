@@ -69,6 +69,11 @@ class SPTrace : public ProbeListenerObject
     void trace(const std::pair<SimpleThread*, StaticInstPtr>&);
 
     /**
+     * system call trace
+     */
+     void syscallTrace(const std::pair<const uint8_t*, int>&);
+
+    /**
      * print memory access trace
      */
     void mem_trace(Trace::InstRecord*, MemRecord*, enum RDWR rw);

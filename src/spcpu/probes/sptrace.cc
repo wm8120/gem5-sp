@@ -62,6 +62,7 @@ SPTrace::SPTrace(const SPTraceParams *p)
 SPTrace::~SPTrace()
 {
     simout.close(traceStream);
+    simout.close(statusStream);
 }
 
 void
@@ -75,6 +76,9 @@ SPTrace::regProbeListeners()
         SPTraceListener;
     listeners.push_back(new SPTraceListener(this, "Commit",
                                              &SPTrace::trace));
+
+    typedef ProbeListenerArg<SPTrace, std::pair<const uint8_t*, int>> SPSysemuListener;
+    listeners.push_back(new SPSysemuListener(this, "SysEmu", &SPTrace::syscallTrace));
 }
 
 void
@@ -203,6 +207,18 @@ void SPTrace::mem_trace(Trace::InstRecord* traceData, MemRecord* memTraceData, e
     //        *traceStream << "0x" << std::hex << traceData->getIntData();
     //}
     *traceStream << ":Stride:" << std::dec << stride;
+}
+
+void SPTrace::syscallTrace(const std::pair<const uint8_t*, int>& p)
+{
+    const uint8_t* data = p.first;
+    int size = p.second;
+
+    for (int i=0; i < size; i++)
+    {
+        *traceStream << data[i];
+    }
+    *traceStream << "\n";
 }
 
 /** SPTrace SimObject */
