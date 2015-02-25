@@ -85,6 +85,9 @@ class SPTrace : public ProbeListenerObject
     /** how many instruction traced **/
     uint64_t trace_num;
 
+    /** What's the pc of last executed inst? **/
+    uint64_t pre_pc;
+
     /** if start tracing **/
     bool start_tracing;
 

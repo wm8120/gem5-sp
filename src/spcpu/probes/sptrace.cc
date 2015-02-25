@@ -42,10 +42,13 @@
 #include "cpu/spcpu/probes/sptrace.hh"
 #include "cpu/spcpu/spcpu.hh"
 
+using namespace std;
+
 SPTrace::SPTrace(const SPTraceParams *p)
     : ProbeListenerObject(p),
       skip_trace_num(p->skip_num),
       trace_num(0),
+      pre_pc(0),
       start_tracing(false),
       traceStream(NULL),
       statusStream(NULL)
@@ -164,8 +167,10 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
     *traceStream << "\n";
 
 out:
+    pre_pc = pc;
     //inc trace_num;
-    trace_num++;
+    if ( !inst->isMicroop() || inst->isLastMicroop() )
+        trace_num++;
 }
 
 void SPTrace::mem_trace(Trace::InstRecord* traceData, MemRecord* memTraceData, enum RDWR rw)
@@ -183,42 +188,43 @@ void SPTrace::mem_trace(Trace::InstRecord* traceData, MemRecord* memTraceData, e
 
     *traceStream << memTraceData->strData().c_str();
 
-    //switch (stride)
-    //{
-    //    case 0:
-    //        break;
-    //    case 3:
-    //        *traceStream << "0x" << std::hex << traceData->getFloatData();
-    //        break;
-    //    case 5:
-    //        {
-    //            //Trace::TwinU32 tu32 = traceData->getTwinU32Data();
-    //            //*traceStream << "0x" << std::hex << tu32.a << ",0x" << std::hex << tu32.b;
-    //            break;
-    //        }
-    //    case 9:
-    //        {
-    //            //Trace::TwinU64 tu64 = traceData->getTwinU64Data();
-    //            //*traceStream << "0x" << std::hex << tu64.a << ",0x" << std::hex << tu64.b;
-    //            stride = 8;
-    //            break;
-    //        }
-    //    default:
-    //        *traceStream << "0x" << std::hex << traceData->getIntData();
-    //}
     *traceStream << ":Stride:" << std::dec << stride;
 }
 
 void SPTrace::syscallTrace(const std::pair<const uint8_t*, int>& p)
 {
     const uint8_t* data = p.first;
-    int size = p.second;
+    int origin_size = p.second;
 
-    for (int i=0; i < size; i++)
+    uint8_t* cur_data = (uint8_t*) data;
+    int size = origin_size;
+
+    uint64_t stack_base = 0x8000000000 ;
+    uint64_t fake_pc = stack_base*16;
+
+    *traceStream << "0x" << hex << pre_pc+4 <<":svc 0\n";
+    pre_pc += 4;
+
+    while (size-8 > 0)
     {
-        *traceStream << data[i];
+        *traceStream << "0x" << std::hex << fake_pc << ":nop" << \
+            ":MemWrite:vaddr " << std::hex << (void *)cur_data << \
+            ",data ";
+        MemRecord memr(cur_data, 8);
+        *traceStream << memr.strData() << ":Stride:8" << "\n";
+        fake_pc += 4;
+        cur_data += 8;
+        size -= 8;
     }
-    *traceStream << "\n";
+    for (; size > 0; size--)
+    {
+        *traceStream << "0x" << std::hex << fake_pc << ":nop" << \
+            ":MemWrite:vaddr " << std::hex << (void*)cur_data << \
+            ",data 0x" << std::setfill('0') << std::setw(2) << \
+            std::hex << (unsigned)*cur_data << ":Stride:1" << "\n";
+        fake_pc += 4;
+        cur_data++;
+    }
 }
 
 /** SPTrace SimObject */
