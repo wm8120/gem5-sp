@@ -133,8 +133,9 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
     
 
     //disassembly
-    *traceStream << inst->disassemble(pc);
-    *traceStream << ":";
+    //*traceStream << inst->disassemble(pc);
+    *traceStream << setfill('0') << setw(8) << hex << spcpu->getMachInst();
+    *traceStream << "(" << inst->disassemble(pc) << "):";
 
     //RegChange
     destRegNum = inst->numDestRegs();

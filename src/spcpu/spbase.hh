@@ -460,6 +460,11 @@ class SPBaseSimpleCPU : public BaseCPU, public ExecContext
     bool misspeculating() { return thread->misspeculating(); }
     ThreadContext *tcBase() { return tc; }
 
+    /**
+     * get the machine code of current instruction
+     */
+    TheISA::MachInst& getMachInst() { return inst; }
+
   private:
     TheISA::PCState pred_pc;
 };
