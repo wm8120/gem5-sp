@@ -117,6 +117,9 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
         }
         *statusStream << "\n";
 
+        //tpidr_el0
+        *statusStream << "tpidr_el0=" << hex << "0x" << thread->readMiscRegNoEffect(MISCREG_TPIDR_EL0) << "\n";
+
         //dump stack info
         *statusStream << "#stack\n";
         *statusStream << "stack_base=0x8000000000\n";
@@ -126,6 +129,7 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
 
         goto out;
     }
+
 
     // pc
     *traceStream << "0x" << std::hex << pc;
