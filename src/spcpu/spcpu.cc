@@ -594,9 +594,6 @@ LivespCPU::tick()
             preExecute();
 
             if (curStaticInst) {
-                //protect memory access trace
-                //if (curStaticInst->opClass() == Enums::MemWrite || curStaticInst->opClass() == Enums::MemRead)
-                //    traceData->invalidDataOverride();
 
                 fault = curStaticInst->execute(this, traceData);
 
@@ -605,9 +602,18 @@ LivespCPU::tick()
                     countInst();
                     ppCommit->notify(std::make_pair(thread, curStaticInst));
                 }
-                else if (traceData && !DTRACE(ExecFaulting)) {
-                    delete traceData;
-                    traceData = NULL;
+                else 
+                {
+                    // print svc trace,
+                    if (curStaticInst->isSyscall())
+                    {
+                        ppCommit->notify(std::make_pair(thread, curStaticInst));
+                    }
+
+                    if (traceData && !DTRACE(ExecFaulting)) {
+                        delete traceData;
+                        traceData = NULL;
+                    }
                 }
 
                 postExecute();

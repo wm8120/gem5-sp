@@ -98,6 +98,8 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
     LivespCPU* spcpu = (LivespCPU *)thread->getCpuPtr();
     Trace::InstRecord *traceData = spcpu->getTraceData();
 
+    ThreadContext* tc = thread->getTC();
+
     if (trace_num < skip_trace_num)
         goto out;
 
@@ -131,6 +133,12 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
         *traceStream << "." << thread->pcState().microPC();
     *traceStream << ":";
     
+    if (inst->isSyscall()) {
+        *traceStream << "svc 0";
+        uint32_t callNum = tc->readIntReg(INTREG_X8);
+        *traceStream << ":" << dec << callNum << "\n";
+        return;
+    }
 
     //disassembly
     //*traceStream << inst->disassemble(pc);
@@ -202,9 +210,6 @@ void SPTrace::syscallTrace(const std::pair<const uint8_t*, int>& p)
 
     uint64_t stack_base = 0x8000000000 ;
     uint64_t fake_pc = stack_base*16;
-
-    *traceStream << "0x" << hex << pre_pc+4 <<":svc 0\n";
-    pre_pc += 4;
 
     while (size-8 > 0)
     {
