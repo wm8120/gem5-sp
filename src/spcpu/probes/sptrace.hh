@@ -74,9 +74,19 @@ class SPTrace : public ProbeListenerObject
      void syscallTrace(const std::pair<const uint8_t*, int>&);
 
     /**
+     * system call return
+     */
+     void syscallRet(SimpleThread* const &);
+
+    /**
      * print memory access trace
      */
     void mem_trace(Trace::InstRecord*, MemRecord*, enum RDWR rw);
+
+    /**
+     * reset fake_pc to STACK_BOTTOM*16
+     */
+    void resetFakePC();
 
   private:
     /** skip the first skip_trace_num instructions from simulation start **/
@@ -84,6 +94,9 @@ class SPTrace : public ProbeListenerObject
 
     /** how many instruction traced **/
     uint64_t trace_num;
+
+    /** the fake pc to print out when syscall emulation **/
+    uint64_t fake_pc;
 
     /** What's the pc of last executed inst? **/
     uint64_t pre_pc;

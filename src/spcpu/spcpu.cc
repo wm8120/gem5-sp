@@ -646,8 +646,13 @@ LivespCPU::tick()
             }
 
         }
-        if(fault != NoFault || !stayAtPC)
+        if(fault != NoFault || !stayAtPC) {
             advancePC(fault);
+            //in SE, at the place the system emulation returns
+            if(curStaticInst->isSyscall()) {
+                ppSvcRet->notify(thread);
+            }
+        }
     }
 
     if (tryCompleteDrain())
@@ -666,6 +671,7 @@ LivespCPU::regProbePoints()
 {
     ppCommit = new ProbePointArg<pair<SimpleThread*, const StaticInstPtr>>
                                 (getProbeManager(), "Commit");
+    ppSvcRet = new ProbePointArg<SimpleThread*> (getProbeManager(), "SvcRet");
 }
 
 void

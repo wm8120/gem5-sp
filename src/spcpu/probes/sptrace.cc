@@ -42,6 +42,8 @@
 #include "cpu/spcpu/probes/sptrace.hh"
 #include "cpu/spcpu/spcpu.hh"
 
+#define STACK_BOTTOM 0x8000000000
+
 using namespace std;
 
 SPTrace::SPTrace(const SPTraceParams *p)
@@ -53,6 +55,8 @@ SPTrace::SPTrace(const SPTraceParams *p)
       traceStream(NULL),
       statusStream(NULL)
 {
+    resetFakePC();
+
     traceStream = simout.create(p->trace_file, false);
     if (!traceStream)
         fatal("unable to open trace file");
@@ -82,6 +86,9 @@ SPTrace::regProbeListeners()
 
     typedef ProbeListenerArg<SPTrace, std::pair<const uint8_t*, int>> SPSysemuListener;
     listeners.push_back(new SPSysemuListener(this, "SysEmu", &SPTrace::syscallTrace));
+
+    typedef ProbeListenerArg<SPTrace, SimpleThread*> SPSvcRetListener;
+    listeners.push_back(new SPSvcRetListener(this, "SvcRet", &SPTrace::syscallRet));
 }
 
 void
@@ -92,7 +99,6 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
 
     SimpleThread* thread = p.first;
     const StaticInstPtr &inst = p.second;
-    int destRegNum = 0;
 
     Addr pc = thread->pcState().instAddr();
     LivespCPU* spcpu = (LivespCPU *)thread->getCpuPtr();
@@ -126,9 +132,11 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
             *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i);
             *statusStream << "\n";
         }
+        *statusStream << "\n";
 
         //tpidr_el0
         *statusStream << "tpidr_el0=" << hex << "0x" << thread->readMiscRegNoEffect(MISCREG_TPIDR_EL0) << "\n";
+        *statusStream << "\n";
 
         //dump stack info
         *statusStream << "#stack\n";
@@ -140,6 +148,26 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
         goto out;
     }
 
+    if (inst->isSyscall()) {
+    
+        *traceStream << "0x" << std::hex << pc;
+        if (inst->isMicroop())
+            *traceStream << "." << thread->pcState().microPC();
+
+        *traceStream << ":svc 0";
+        uint32_t callNum = tc->readIntReg(INTREG_X8);
+        *traceStream << ":" << dec << callNum << "\n";
+        //dump registers x0-x7
+        *traceStream << "0x" << std::hex << fake_pc << ":nop:RegChange:";
+        for (int i=0; i<8; i++)
+        {
+            *traceStream << "x" << dec << i << " 0x" << \
+                hex << thread->readIntReg(i) << " ";
+        }
+        *traceStream << "\n";
+        fake_pc += 4;
+        return;
+    }
 
     // pc
     *traceStream << "0x" << std::hex << pc;
@@ -147,26 +175,19 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
         *traceStream << "." << thread->pcState().microPC();
     *traceStream << ":";
     
-    if (inst->isSyscall()) {
-        *traceStream << "svc 0";
-        uint32_t callNum = tc->readIntReg(INTREG_X8);
-        *traceStream << ":" << dec << callNum << "\n";
-        return;
-    }
-
     //disassembly
     //*traceStream << inst->disassemble(pc);
     *traceStream << setfill('0') << setw(8) << hex << spcpu->getMachInst();
     *traceStream << "(" << inst->disassemble(pc) << "):";
 
     //RegChange
-    destRegNum = inst->numDestRegs();
-    for (int i=0; i < destRegNum; i++)
-    {
-        //*traceStream << thread->readIntReg(inst->destRegIdx(i)) << " ";
-        *traceStream << inst->destRegIdx(i) << " ";
-    }
-    *traceStream << ":";
+    //destRegNum = inst->numDestRegs();
+    //for (int i=0; i < destRegNum; i++)
+    //{
+    //    //*traceStream << thread->readIntReg(inst->destRegIdx(i)) << " ";
+    //    *traceStream << inst->destRegIdx(i) << " ";
+    //}
+    //*traceStream << ":";
 
     //MemChange and Stride
     if (inst->opClass() == Enums::MemWrite && traceData->getAddrValid()) 
@@ -222,9 +243,6 @@ void SPTrace::syscallTrace(const std::pair<const uint8_t*, int>& p)
     uint8_t* cur_data = (uint8_t*) data;
     int size = origin_size;
 
-    uint64_t stack_base = 0x8000000000 ;
-    uint64_t fake_pc = stack_base*16;
-
     while (size-8 > 0)
     {
         *traceStream << "0x" << std::hex << fake_pc << ":nop" << \
@@ -245,6 +263,24 @@ void SPTrace::syscallTrace(const std::pair<const uint8_t*, int>& p)
         fake_pc += 4;
         cur_data++;
     }
+}
+
+void SPTrace::syscallRet(SimpleThread* const & thread)
+{
+    *traceStream << "0x" << std::hex << fake_pc << ":nop:RegChange:";
+    for (int i=0; i<8; i++)
+    {
+        *traceStream << "x" << dec << i << " 0x" << \
+            hex << thread->readIntReg(i) << " ";
+    }
+    
+    *traceStream << "\n";
+    resetFakePC();
+}
+
+void SPTrace::resetFakePC()
+{
+    fake_pc = STACK_BOTTOM*16;
 }
 
 /** SPTrace SimObject */

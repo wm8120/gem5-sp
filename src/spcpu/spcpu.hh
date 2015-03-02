@@ -219,6 +219,7 @@ class LivespCPU : public SPBaseSimpleCPU
 
     /** Probe Points. */
     ProbePointArg<std::pair<SimpleThread*, const StaticInstPtr>> *ppCommit;
+    ProbePointArg<SimpleThread*> *ppSvcRet;
 
   protected:
 
