@@ -117,6 +117,16 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
         }
         *statusStream << "\n";
 
+        //vfp/simd
+        for (int i=0; i<128; i+=4) {
+            *statusStream << "v" << dec << i/4 << "=0x";
+            *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i+3);
+            *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i+2);
+            *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i+1);
+            *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i);
+            *statusStream << "\n";
+        }
+
         //tpidr_el0
         *statusStream << "tpidr_el0=" << hex << "0x" << thread->readMiscRegNoEffect(MISCREG_TPIDR_EL0) << "\n";
 
