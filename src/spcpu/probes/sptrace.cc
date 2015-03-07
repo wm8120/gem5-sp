@@ -116,10 +116,15 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
 
         //dump registers 
         *statusStream << "#registers" << "\n";
+        //X31 need to be output seperatedly, because readIntReg(31) return the 
+        // value of INTREG_ZERO rather than INTREG_SPX
         for(int i=0; i < TheISA::NUM_ARCH_INTREGS; i++)
         {
-            *statusStream << "x" << std::dec << i << "=" << \
-                    "0x" << std::hex << thread->readIntReg(i) << "\n";
+            *statusStream << "x" << std::dec << i << "=";
+            if (i==31)
+                *statusStream << "0x" << std::hex << thread->readIntReg(INTREG_SPX) << "\n";
+            else
+                *statusStream << "0x" << std::hex << thread->readIntReg(i) << "\n";
         }
         *statusStream << "\n";
 
