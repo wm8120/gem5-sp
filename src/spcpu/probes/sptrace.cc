@@ -154,9 +154,9 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
         if (inst->isMicroop())
             *traceStream << "." << thread->pcState().microPC();
 
-        *traceStream << ":svc 0";
+        *traceStream << ":" << hex << spcpu->getMachInst() << "(svc 0";
         uint32_t callNum = tc->readIntReg(INTREG_X8);
-        *traceStream << ":" << dec << callNum << "\n";
+        *traceStream << ";" << dec << callNum << ")\n";
         //dump registers x0-x7
         *traceStream << "0x" << std::hex << fake_pc << ":nop:RegChange:";
         for (int i=0; i<8; i++)
@@ -178,7 +178,7 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
     //disassembly
     //*traceStream << inst->disassemble(pc);
     *traceStream << setfill('0') << setw(8) << hex << spcpu->getMachInst();
-    *traceStream << "(" << inst->disassemble(pc) << "):";
+    *traceStream << "(" << inst->disassemble(pc) << ")";
 
     //RegChange
     //destRegNum = inst->numDestRegs();
@@ -222,9 +222,9 @@ void SPTrace::mem_trace(Trace::InstRecord* traceData, MemRecord* memTraceData, e
     int stride = memTraceData->getStride();
     
     if (rw == READ)
-        *traceStream << "MemRead";
+        *traceStream << ":MemRead";
     else 
-        *traceStream << "MemWrite";
+        *traceStream << ":MemWrite";
 
     *traceStream << ":vaddr ";
     Addr mem_addr = traceData->getAddr();
