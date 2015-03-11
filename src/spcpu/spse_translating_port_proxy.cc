@@ -15,7 +15,7 @@ SPSETranslatingPortProxy::SPSETranslatingPortProxy(MasterPort& port, Process* p,
 { 
 }
 
-void SPSETranslatingPortProxy::setProbePointArg(ProbePointArg<std::pair<const uint8_t*,int>>* pp)
+void SPSETranslatingPortProxy::setProbePointArg(ProbePointArg<ScEmuInfo>* pp)
 {
     ppSysemu = pp;
 }
@@ -23,7 +23,8 @@ void SPSETranslatingPortProxy::setProbePointArg(ProbePointArg<std::pair<const ui
 void SPSETranslatingPortProxy::writeBlob(Addr addr, uint8_t *p, int size) const {
     if (ppSysemu == NULL)
         fatal("ProbePointArg of SPSETranslatingPortProxy didn't initialize!");
-    ppSysemu->notify(std::make_pair(p, size));
+    ScEmuInfo sc = {.vaddr = addr, .data = p, .size = size};
+    ppSysemu->notify(sc);
 
     if (!tryWriteBlob(addr, p, size))
         fatal("writeBlob(0x%x, ...) failed", addr);

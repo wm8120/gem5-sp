@@ -8,6 +8,12 @@
 
 class Process;
 
+typedef struct SysemuInfo {
+    Addr vaddr; //the memory address in simulated system
+    uint8_t* data; //pointer to data buffer
+    int size; // buffer size
+} ScEmuInfo;
+
 class SPSETranslatingPortProxy: public SETranslatingPortProxy
 {
     public:
@@ -16,10 +22,10 @@ class SPSETranslatingPortProxy: public SETranslatingPortProxy
 
         virtual void writeBlob(Addr addr, uint8_t *p, int size) const;
 
-        void setProbePointArg(ProbePointArg<std::pair<const uint8_t*, int >>* pp);
+        void setProbePointArg(ProbePointArg<ScEmuInfo>* pp);
 
     private:
-        ProbePointArg<std::pair<const uint8_t*, int>> *ppSysemu;
+        ProbePointArg<ScEmuInfo> *ppSysemu;
 };
 
 #endif //__SP_TRANSLATING_PROXY

@@ -84,7 +84,7 @@ SPTrace::regProbeListeners()
     listeners.push_back(new SPTraceListener(this, "Commit",
                                              &SPTrace::trace));
 
-    typedef ProbeListenerArg<SPTrace, std::pair<const uint8_t*, int>> SPSysemuListener;
+    typedef ProbeListenerArg<SPTrace, ScEmuInfo> SPSysemuListener;
     listeners.push_back(new SPSysemuListener(this, "SysEmu", &SPTrace::syscallTrace));
 
     typedef ProbeListenerArg<SPTrace, SimpleThread*> SPSvcRetListener;
@@ -148,6 +148,10 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
         *statusStream << "stack_base=0x8000000000\n";
         *statusStream << "stack_limit=0x4000\n";
 
+        //interval size
+        *statusStream << "#interval\n";
+        *statusStream << "interval=0x5F5E100"; //100,000,000
+
         start_tracing = true;
 
         goto out;
@@ -163,7 +167,7 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
         uint32_t callNum = tc->readIntReg(INTREG_X8);
         *traceStream << ";" << dec << callNum << ")\n";
         //dump registers x0-x7
-        *traceStream << "0x" << std::hex << fake_pc << ":nop:RegChange:";
+        *traceStream << "0x" << std::hex << fake_pc << ":d503201f(nop):RegChange:";
         for (int i=0; i<8; i++)
         {
             *traceStream << "x" << dec << i << " 0x" << \
@@ -240,39 +244,43 @@ void SPTrace::mem_trace(Trace::InstRecord* traceData, MemRecord* memTraceData, e
     *traceStream << ":Stride:" << std::dec << stride;
 }
 
-void SPTrace::syscallTrace(const std::pair<const uint8_t*, int>& p)
+void SPTrace::syscallTrace(const ScEmuInfo& p)
 {
-    const uint8_t* data = p.first;
-    int origin_size = p.second;
+    const Addr vaddr = p.vaddr;
+    const uint8_t* data = p.data;
+    int origin_size = p.size;
 
     uint8_t* cur_data = (uint8_t*) data;
+    Addr cur_vaddr = (Addr) vaddr;
     int size = origin_size;
 
     while (size-8 > 0)
     {
-        *traceStream << "0x" << std::hex << fake_pc << ":nop" << \
-            ":MemWrite:vaddr " << std::hex << (void *)cur_data << \
+        *traceStream << "0x" << std::hex << fake_pc << ":d503201f(nop)" << \
+            ":MemWrite:vaddr " << std::hex << (void *)cur_vaddr << \
             ",data ";
         MemRecord memr(cur_data, 8);
         *traceStream << memr.strData() << ":Stride:8" << "\n";
         fake_pc += 4;
         cur_data += 8;
+        cur_vaddr += 8;
         size -= 8;
     }
     for (; size > 0; size--)
     {
-        *traceStream << "0x" << std::hex << fake_pc << ":nop" << \
-            ":MemWrite:vaddr " << std::hex << (void*)cur_data << \
+        *traceStream << "0x" << std::hex << fake_pc << ":d503201f(nop)" << \
+            ":MemWrite:vaddr " << std::hex << (void*)cur_vaddr << \
             ",data 0x" << std::setfill('0') << std::setw(2) << \
             std::hex << (unsigned)*cur_data << ":Stride:1" << "\n";
         fake_pc += 4;
         cur_data++;
+        cur_vaddr++;
     }
 }
 
 void SPTrace::syscallRet(SimpleThread* const & thread)
 {
-    *traceStream << "0x" << std::hex << fake_pc << ":nop:RegChange:";
+    *traceStream << "0x" << std::hex << fake_pc << ":d503201f(nop):RegChange:";
     for (int i=0; i<8; i++)
     {
         *traceStream << "x" << dec << i << " 0x" << \

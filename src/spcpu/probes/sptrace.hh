@@ -46,6 +46,7 @@
 #include "params/SPTrace.hh"
 #include "sim/probe/probe.hh"
 #include "cpu/spcpu/spcpu.hh"
+#include "cpu/spcpu/spse_translating_port_proxy.hh"
 
 /**
  * Probe for tracing simpoint interval
@@ -71,7 +72,7 @@ class SPTrace : public ProbeListenerObject
     /**
      * system call trace
      */
-     void syscallTrace(const std::pair<const uint8_t*, int>&);
+     void syscallTrace(const ScEmuInfo&);
 
     /**
      * system call return

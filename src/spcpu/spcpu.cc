@@ -95,8 +95,8 @@ LivespCPU::init()
             thread->getProcessPtr(),
             SETranslatingPortProxy::NextPage);
     //register probe point  
-    ProbePointArg<std::pair<const uint8_t*, int >>* pp = \
-        new ProbePointArg<std::pair<const uint8_t*, int >>(getProbeManager(), "SysEmu");
+    ProbePointArg<ScEmuInfo>* pp = \
+        new ProbePointArg<ScEmuInfo>(getProbeManager(), "SysEmu");
     sp_proxy->setProbePointArg(pp);
 
     SETranslatingPortProxy* spse_proxy = sp_proxy;
@@ -414,7 +414,6 @@ Fault
 LivespCPU::writeMem(uint8_t *data, unsigned size,
                           Addr addr, unsigned flags, uint64_t *res)
 {
-
     static uint8_t zero_array[64] = {};
 
     if (data == NULL) {
