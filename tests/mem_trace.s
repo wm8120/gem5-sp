@@ -14,7 +14,7 @@ main:
 //strb w1, [sp], -1 // stride = 1, data = 1
 ldr x0, =test_data  
 ldr x1, [x0], #8
-ldr x2, [x0]
+ldr x1, [x0]
 stp x1, x2, [sp, #-16] // stride = 8
 ldp x3, x4, [sp, #-16] // stride = 8
 stp x3, x4, [sp, #-16] // stride = 8
