@@ -275,6 +275,8 @@ if '--ruby' in sys.argv:
 # sp dedicated options
 parser.add_option("--disable-rgdb", action="store_true", help="disable the listening to \
                     remote gdb for preventing disturb")
+parser.add_option("--disable-vnc", action="store_true", help="disable the listening to \
+                    vnc for preventing disturb")
 
 (options, args) = parser.parse_args()
 
@@ -308,6 +310,11 @@ else:
 np = options.num_cpus
 
 test_sys = build_test_system(np)
+
+# vnc disable or not
+if (options.disable_vnc):
+    test_sys.vncserver.port = 0
+
 if len(bm) == 2:
     drive_sys = build_drive_system(np)
     root = makeDualRoot(True, test_sys, drive_sys, options.etherdump)
