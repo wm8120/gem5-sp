@@ -23,6 +23,7 @@ Install
     scons -j8 build/ARM/gem5.opt CPU_MODELS=AtomicSimpleCPU,LivespCPU
     ```
   </pre>
+
 Use
 -------
 ### Periodically checkpointing the simulation
