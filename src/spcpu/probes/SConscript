@@ -30,12 +30,8 @@
 
 Import('*')
 
-if 'LivespCPU' in env['CPU_MODELS'] and \
-    'AtomicSimpleCPU' not in env['CPU_MODELS'] and \
-    'TimingSimpleCPU' not in env['CPU_MODELS']:
-    SimObject('SimPoint.py')
-    Source('../../simple/probes/simpoint.cc')
-
 if 'LivespCPU' in env['CPU_MODELS']:
     SimObject('SPTrace.py')
     Source('sptrace.cc')
+    SimObject('SPSimPoint.py')
+    Source('spsimpoint.cc')

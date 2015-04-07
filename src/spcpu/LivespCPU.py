@@ -40,7 +40,7 @@
 
 from m5.params import *
 from SPBaseSimpleCPU import SPBaseSimpleCPU
-from SimPoint import SimPoint
+from SPSimPoint import SPSimPoint
 from SPTrace import SPTrace
 
 class LivespCPU(SPBaseSimpleCPU):
@@ -65,11 +65,11 @@ class LivespCPU(SPBaseSimpleCPU):
     fastmem = Param.Bool(False, "Access memory directly")
 
     def addSimPointProbe(self, interval, bbv_file):
-        simpoint = SimPoint()
-        simpoint.interval = interval
+        spsimpoint = SPSimPoint()
+        spsimpoint.interval = interval
         if bbv_file is not None:
-            simpoint.profile_file = bbv_file
-        self.probeListener = simpoint
+            spsimpoint.profile_file = bbv_file
+        self.probeListener = spsimpoint
 
     def addSPTraceProbe(self, skip_num, trace_file):
         sptrace = SPTrace()

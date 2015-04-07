@@ -38,11 +38,11 @@
 from m5.params import *
 from Probe import ProbeListenerObject
 
-class SimPoint(ProbeListenerObject):
+class SPSimPoint(ProbeListenerObject):
     """Probe for collecting SimPoint Basic Block Vectors (BBVs)."""
 
-    type = 'SimPoint'
-    cxx_header = "cpu/simple/probes/simpoint.hh"
+    type = 'SPSimPoint'
+    cxx_header = "cpu/spcpu/probes/spsimpoint.hh"
 
     interval = Param.UInt64(100000000, "Interval Size (insts)")
     profile_file = Param.String("simpoint.bb.gz", "BBV (output) file")
