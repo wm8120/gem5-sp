@@ -6,7 +6,7 @@ Install
 ---------
 1. Clone gem5 repository to local
     <pre>
-    hg clone [http://repo.gem5.org/](http://repo.gem5.org/)
+    hg clone [http://repo.gem5.org/gem5](http://repo.gem5.org/gem5)
     </pre>
 2. Checkout the stable version
     <pre>
