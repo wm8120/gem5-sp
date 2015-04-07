@@ -6,12 +6,14 @@ Install
 ---------
 1. Clone gem5 repository to local
     <pre>
+    ```
     hg clone [http://repo.gem5.org/gem5](http://repo.gem5.org/gem5)
+    ```
     </pre>
 2. Checkout the stable version
-    <pre>
+    ```
     hg update stable_2014_12_14
-    </pre>
+    ```
 3. Copy the cpu model to gem5 tree and compile
     <pre>
     cp -r gem5-sp/src/spcpu/ gem5/src/
