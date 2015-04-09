@@ -12,9 +12,16 @@ Install
     <pre>
     hg update stable_2014_12_14
     </pre>
-3. Copy the cpu model to gem5 tree and compile
+3. Copy the cpu model to gem5 tree
     <pre>
     cp -r gem5-sp/src/spcpu/ gem5/src/
+    </pre>
+4. Patch some files
+    <pre>
+    patch src/sim/syscall_emul.hh < unlinkat.patch
+    </pre>
+5. Compile
+    <pre>
     scons -j8 build/ARM/gem5.opt CPU_MODELS=AtomicSimpleCPU,LivespCPU
     </pre>
 
