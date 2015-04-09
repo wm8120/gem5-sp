@@ -1,0 +1,42 @@
+diff -r 5a585bf34ff9 src/sim/syscall_emul.hh
+--- a/src/sim/syscall_emul.hh	Wed Feb 18 15:13:18 2015 -0500
++++ b/src/sim/syscall_emul.hh	Wed Apr 08 22:13:53 2015 -0400
+@@ -261,6 +261,9 @@
+                            LiveProcess *p, ThreadContext *tc);
+ 
+ /// Target unlink() handler.
++SyscallReturn unlinkHelper(SyscallDesc *desc, int num,
++                           LiveProcess *p, ThreadContext *tc,
++                           int index);
+ SyscallReturn unlinkFunc(SyscallDesc *desc, int num,
+                          LiveProcess *p, ThreadContext *tc);
+ 
+@@ -701,6 +704,19 @@
+         warn("openat: first argument not AT_FDCWD; unlikely to work");
+     return openFunc<OS>(desc, callnum, process, tc, 1);
+ }
++/// Target unlinkat() handler.
++template <class OS>
++SyscallReturn
++unlinkatFunc(SyscallDesc *desc, int callnum, LiveProcess *process,
++             ThreadContext *tc)
++{
++    int index = 0;
++    int dirfd = process->getSyscallArg(tc, index);
++    if (dirfd != OS::TGT_AT_FDCWD)
++        warn("unlinkat: first argument not AT_FDCWD; unlikely to work");
++
++    return unlinkHelper(desc, callnum, process, tc, 1);
++}
+ 
+ /// Target facessat() handler
+ template <class OS>
+@@ -1184,7 +1200,7 @@
+     if (result < 0)
+         return -errno;
+ 
+-    return 0;
++    return result;
+ }
+ 
+ 
