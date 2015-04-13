@@ -18,7 +18,7 @@ Install
     </pre>
 4. Patch some files
     <pre>
-    patch src/sim/syscall_emul.hh < unlinkat.patch
+    patch -p1 < unlinkat.patch
     </pre>
 5. Compile
     <pre>
