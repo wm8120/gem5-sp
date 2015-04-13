@@ -89,6 +89,11 @@ class SPTrace : public ProbeListenerObject
      */
     void resetFakePC();
 
+    /**
+     * dump initial status
+     */
+    void dumpInitStatus(std::ostream* statusStream, SimpleThread* thread);
+
   private:
     /** skip the first skip_trace_num instructions from simulation start **/
     const uint64_t skip_trace_num;
@@ -104,6 +109,10 @@ class SPTrace : public ProbeListenerObject
 
     /** if start tracing **/
     bool start_tracing;
+
+    /** after fastforward the beginning partial bb
+     if the following bb is a single branch bb **/
+    bool bb_single_branch;
 
     /** Pointer to trace stream */
     std::ostream *traceStream;

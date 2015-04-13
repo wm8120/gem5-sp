@@ -52,6 +52,7 @@ SPTrace::SPTrace(const SPTraceParams *p)
       trace_num(0),
       pre_pc(0),
       start_tracing(false),
+      bb_single_branch(true),
       traceStream(NULL),
       statusStream(NULL)
 {
@@ -69,7 +70,7 @@ SPTrace::SPTrace(const SPTraceParams *p)
 SPTrace::~SPTrace()
 {
     simout.close(traceStream);
-    simout.close(statusStream);
+    //needn't cloase statusStream, cause statusStream is closed after dumping init status
 }
 
 void
@@ -114,47 +115,33 @@ SPTrace::trace(const std::pair<SimpleThread*, StaticInstPtr>& p)
         if (!inst->isControl()) 
             goto out;
 
-        //dump registers 
-        *statusStream << "#registers" << "\n";
-        //X31 need to be output seperatedly, because readIntReg(31) return the 
-        // value of INTREG_ZERO rather than INTREG_SPX
-        for(int i=0; i < TheISA::NUM_ARCH_INTREGS; i++)
-        {
-            *statusStream << "x" << std::dec << i << "=";
-            if (i==31)
-                *statusStream << "0x" << std::hex << thread->readIntReg(INTREG_SPX) << "\n";
-            else
-                *statusStream << "0x" << std::hex << thread->readIntReg(i) << "\n";
-        }
-        *statusStream << "\n";
-
-        //vfp/simd
-        for (int i=0; i<128; i+=4) {
-            *statusStream << "v" << dec << i/4 << "=0x";
-            *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i+3);
-            *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i+2);
-            *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i+1);
-            *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i);
-            *statusStream << "\n";
-        }
-        *statusStream << "\n";
-
-        //tpidr_el0
-        *statusStream << "tpidr_el0=" << hex << "0x" << thread->readMiscRegNoEffect(MISCREG_TPIDR_EL0) << "\n";
-        *statusStream << "\n";
-
-        //dump stack info
-        *statusStream << "#stack\n";
-        *statusStream << "stack_base=0x8000000000\n";
-        *statusStream << "stack_limit=0x4000\n";
-
-        //interval size
-        *statusStream << "#interval\n";
-        *statusStream << "interval=0x5F5E100"; //100,000,000
+        //dump initial status
+        dumpInitStatus(statusStream, thread);
 
         start_tracing = true;
 
         goto out;
+    }
+
+    if (bb_single_branch)
+    {
+        if (!inst->isControl())
+        {
+            //it's not a single branch control, go on processing
+            bb_single_branch = false;
+        }
+        else
+        {
+            //truncate the previous spstatus.txt
+            statusStream = simout.create("spstatus.txt", false);
+            if (!statusStream)
+                fatal("unable to open status file");
+
+            //dump initial status
+            dumpInitStatus(statusStream, thread);
+
+            goto out;
+        }
     }
 
     if (inst->isSyscall()) {
@@ -296,8 +283,51 @@ void SPTrace::resetFakePC()
     fake_pc = STACK_BOTTOM*16;
 }
 
+void SPTrace::dumpInitStatus(std::ostream* statusStream, SimpleThread* thread)
+{
+    //dump registers 
+    *statusStream << "#registers" << "\n";
+    //X31 need to be output seperatedly, because readIntReg(31) return the 
+    // value of INTREG_ZERO rather than INTREG_SPX
+    for(int i=0; i < TheISA::NUM_ARCH_INTREGS; i++)
+    {
+        *statusStream << "x" << std::dec << i << "=";
+        if (i==31)
+            *statusStream << "0x" << std::hex << thread->readIntReg(INTREG_SPX) << "\n";
+        else
+            *statusStream << "0x" << std::hex << thread->readIntReg(i) << "\n";
+    }
+    *statusStream << "\n";
+
+    //vfp/simd
+    for (int i=0; i<128; i+=4) {
+        *statusStream << "v" << dec << i/4 << "=0x";
+        *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i+3);
+        *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i+2);
+        *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i+1);
+        *statusStream << setfill('0') << setw(8) << hex << thread->readFloatRegBits(i);
+        *statusStream << "\n";
+    }
+    *statusStream << "\n";
+
+    //tpidr_el0
+    *statusStream << "tpidr_el0=" << hex << "0x" << thread->readMiscRegNoEffect(MISCREG_TPIDR_EL0) << "\n";
+    *statusStream << "\n";
+
+    //dump stack info
+    *statusStream << "#stack\n";
+    *statusStream << "stack_base=0x8000000000\n";
+    *statusStream << "stack_limit=0x4000\n";
+
+    //interval size
+    *statusStream << "#interval\n";
+    *statusStream << "interval=0x5F5E100"; //100,000,000
+
+    simout.close(statusStream);
+}
+
 /** SPTrace SimObject */
-SPTrace*
+    SPTrace*
 SPTraceParams::create()
 {
     return new SPTrace(this);
