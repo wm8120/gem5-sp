@@ -19,6 +19,7 @@ Install
 4. Patch some files
     <pre>
     patch -p1 < unlinkat.patch
+    patch -p1 < mkdirat.patch
     </pre>
 5. Compile
     <pre>
