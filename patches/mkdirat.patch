@@ -1,0 +1,65 @@
+diff -r 7b122cf36fc6 src/arch/arm/linux/process.cc
+--- a/src/arch/arm/linux/process.cc	Fri Apr 17 14:40:46 2015 -0400
++++ b/src/arch/arm/linux/process.cc	Fri Apr 17 15:01:52 2015 -0400
+@@ -522,7 +522,7 @@
+     /*   31 */ SyscallDesc("ioprio_get", unimplementedFunc),
+     /*   32 */ SyscallDesc("flock", unimplementedFunc),
+     /*   33 */ SyscallDesc("mknodat", unimplementedFunc),
+-    /*   34 */ SyscallDesc("mkdirat", unimplementedFunc),
++    /*   34 */ SyscallDesc("mkdirat", mkdiratFunc<ArmLinux64>),
+     /*   35 */ SyscallDesc("unlinkat", unlinkatFunc<ArmLinux64>),
+     /*   36 */ SyscallDesc("symlinkat", unimplementedFunc),
+     /*   37 */ SyscallDesc("linkat", unimplementedFunc),
+diff -r 7b122cf36fc6 src/sim/syscall_emul.cc
+--- a/src/sim/syscall_emul.cc	Fri Apr 17 14:40:46 2015 -0400
++++ b/src/sim/syscall_emul.cc	Fri Apr 17 15:01:52 2015 -0400
+@@ -412,9 +412,15 @@
+ SyscallReturn
+ mkdirFunc(SyscallDesc *desc, int num, LiveProcess *p, ThreadContext *tc)
+ {
++    return mkdirHelper(desc, num, p, tc, 0);
++}
++
++SyscallReturn
++mkdirHelper(SyscallDesc *desc, int num, LiveProcess *p, ThreadContext *tc,
++            int index)
++{
+     string path;
+ 
+-    int index = 0;
+     if (!tc->getMemProxy().tryReadString(path, p->getSyscallArg(tc, index)))
+         return -EFAULT;
+ 
+diff -r 7b122cf36fc6 src/sim/syscall_emul.hh
+--- a/src/sim/syscall_emul.hh	Fri Apr 17 14:40:46 2015 -0400
++++ b/src/sim/syscall_emul.hh	Fri Apr 17 15:01:52 2015 -0400
+@@ -268,6 +268,9 @@
+                          LiveProcess *p, ThreadContext *tc);
+ 
+ /// Target mkdir() handler.
++SyscallReturn mkdirHelper(SyscallDesc *desc, int num,
++                        LiveProcess *p, ThreadContext *tc,
++                        int index);
+ SyscallReturn mkdirFunc(SyscallDesc *desc, int num,
+                         LiveProcess *p, ThreadContext *tc);
+ 
+@@ -717,7 +720,19 @@
+ 
+     return unlinkHelper(desc, callnum, process, tc, 1);
+ }
++/// Target mkdirat() handler.
++template <class OS>
++SyscallReturn
++mkdiratFunc(SyscallDesc *desc, int callnum, LiveProcess *process,
++             ThreadContext *tc)
++{
++    int index = 0;
++    int dirfd = process->getSyscallArg(tc, index);
++    if (dirfd != OS::TGT_AT_FDCWD)
++        warn("unlinkat: first argument not AT_FDCWD; unlikely to work");
+ 
++    return mkdirHelper(desc, callnum, process, tc, 1);
++}
+ /// Target facessat() handler
+ template <class OS>
+ SyscallReturn
